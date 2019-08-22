@@ -1,21 +1,28 @@
-title: "My JuliaCon proceeding"
+title: "JuliaDB: addressing the two-language problem in analytical databases"
 keywords:
   - Julia
-  - Optimization
-  - Game theory
-  - Compiler
+  - Databases
+  - Analytics
 authors:
-  - name: 1st author
-    orcid: 0000-0003-1361-440X
-    affiliation: 1
-  - name: 2nd author
+  - name: Shashi Gowda
+    email: gowda@mit.edu
     affiliation: 1, 2
-  - name: 3rd author
+  - name: Jeff Bezanson
     affiliation: 2
+  - name: Josh Day
+    affiliation: 2
+  - name: Stefan Karpinski
+    affiliation: 2
+  - name: Viral B. Shah
+    affiliation: 2
+  - name: Pietro Vertechi
+    affiliation: 3
 affiliations:
-  - name: University
+  - name: Massachusetts Institute of Technology
     index: 1
-  - name: National Lab
+  - name: Julia Computing Inc.
     index: 2
+  - name: Champalimaud Centre for the Unknown
+    index: 3
 date: 24 April 2019
 bibliography: ref.bib
