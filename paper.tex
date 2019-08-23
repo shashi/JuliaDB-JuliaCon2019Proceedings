@@ -85,43 +85,36 @@ mean function for an array of measurements in C.
 Use OnlineStats for stats on measurements for lesser
 allocation and parallelism.
 
-\section{Designed of JuliaDB}
+\section{Design of JuliaDB}
 
 In the following subsection we describe the design of JuliaDB which empowers performance and interoperability.
 
-\subsection{Memory layout}
+\subsection{Columnar memory layout}
+The basic datastructure in JuliaDB is the table.
 
-The basic datastructure in JuliaDB is the table. A table can be constructed
-from a Julia-native tuple or named tuple of column vectors. A table
-acts as an iterator of rows. Rows are tuples or named tuples of items. 
-
-Although the interface to a table is as a row iterator, the data is
-stored column-wise for fast uniform access. The columns can be accessed
-using the \texttt{columns} function (returns a named tuple of column
-vectors). The rows can be accessed as an array of structs using the
-\texttt{rows} function rows is a struct of arrays view into the columnar
-storage, unlike table, \texttt{rows} returns a legitimate Julia array.
-Listing 1 shows the workings of rows and columns.
-\begin{lstlisting}[language=Julia]
-julia> t = table((a=[1,2,3], b=[2,3,4]))
-Table with 3 rows, 2 columns:
-a  b
-
-1  2
-2  3
-3  4
-julia> columns(t)
-(a = [1, 2, 3], b = [2, 3, 4])
-julia> rows(t)
-3-element StructArray{NamedTuple{(:a, :b),Tuple{Int64,Int64}},1,...}:
-(a = 1, b = 2)
-(a = 2, b = 3)
-(a = 3, b = 4) 
+\begin{lstlisting}[language=Julia,caption=A table]
+lotr = table((name=StringArray(["Frodo", "Samwise", "Bilbo", "Aragorn",
+                                "Boromir", "Gimli", "Elrond", "Legolas"]),
+             race=PooledArray(["Hobbit", "Hobbit", "Hobbit", "Human",
+                               "Human", "Dwarf", "Elf", "Elf"]),
+             age=[33, 61, 111, 87, 41, 139, 6000, 2931]))
 \end{lstlisting}
 
-Tables have a standard set of operations, below we almost just mention
-them, we defer more detailed specification to the API documentation
-{[}cite{]}. Mainly, they support \texttt{map}, \texttt{reduce}, \texttt{groupreduce}, \texttt{groupby} and \texttt{join} operations.
+Listing 1 shows a table constructed from a named tuple of column vectors. Although a table stores data as a named tuple of columns, it acts as an iterator of rows. Rows are tuples or named tuples of items.
+
+The columns can be accessed
+using the \texttt{columns} function (e.g. \texttt{rows(lotr)} returns a named tuple of column
+vectors provided to \texttt{table} during construction) while the rows can be accessed as an array of tuples using the
+\texttt{rows} function rows is a struct of arrays view into the columnar
+storage, unlike \texttt{table} which returns a JuliaDB table, \texttt{rows} returns a legitimate Julia array.
+
+Tables support \texttt{map}, \texttt{reduce}, \texttt{groupreduce}, \texttt{groupby} and \texttt{join} operations.
+
+Listing 1 also illustrates use of \texttt{StringArray} and \texttt{PooledArray} array types as columns. These special array types enable efficient packing of String and categorical data respectively.
+
+A \texttt{StringArray}'s memory layout is showin in Figure \ref{fig:stringarray}. The contents of strings (unicode character codes) are packed into a buffer of 8-bit unsigend integers. \texttt{StringArray} also stores the lengths of each string and the index (offset) at which each of them starts. Although it would suffice to store just the length of each string, storing offset also allows us to implement efficient mutation operations. Setting an element of the array appends the new string to the end of the buffer and replaces the length and offset with the corresponding new length and offsets for that item. Operations such as \texttt{sort!} and \texttt{permute!} (in place permutation of items) can simply modify the length and offset arrays and leave the buffer unmodified. Wherever suitable, in code internal to JuliaDB, we create \texttt{WeakRefString} instead of creating String objects when we index into a \texttt{StringArray}, this greatly reduces GC-load when dealing with string columns in operations such as groupby and join.
+
+A \texttt{PooledArray}'s memory layout is shown in Figure \ref{fig:pooledarray}. It is useful in compressing data with low number of unique items as compared to the total number of items. PooledArrays stores a dictionary mapping each unique item to a \texttt{ref} integer, and then an array of refs which tells which unique element appears in what position in the uncompressed array.
 
 \subsection{Sort-based indexing}
 
