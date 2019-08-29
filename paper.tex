@@ -57,11 +57,13 @@ with it. Numeric operations on measuements propagate the
 uncertainty as prescribed by linear error propagation theory:
 For a function application $G(a,b,c...)$ where arguments are measurements $a=\overline{a} \pm \sigma_{a}, b=\overline{b} \pm \sigma_{b}, c=\overline{c} \pm \sigma_{c}$ the error of the output is found using the relationship:
 
-\[
-\begin{align}\sigma_{G}^{2}=&\left(\left.\frac{\partial G}{\partial a}\right|_{a=\overline{a}} \sigma_{a}\right)^{2}+\left(\left.\frac{\partial G}{\partial b}\right|_{b=\overline{b}} \sigma_{b}\right)^{2}+\left(\left.\frac{\partial G}{\partial c}\right|_{c=\overline{c}} \sigma_{c}\right)^{2}+\cdots \\
-&+2\left(\frac{\partial G}{\partial a}\right)_{a=\overline{a}}\left(\frac{\partial G}{\partial b}\right)_{b=\overline{b}} \sigma_{a b}+2\left(\frac{\partial G}{\partial a}\right)_{a=\overline{a}}\left(\frac{\partial G}{\partial c}\right)_{c=\overline{c}} \sigma_{a c} \\ &+2\left(\frac{\partial G}{\partial b}\right)_{b=\overline{b}}\left(\frac{\partial G}{\partial c}\right)_{c=\overline{c}} \sigma_{b c}+\cdots \end{align}
+\begin{equation}
+$$\sigma_{G}^{2}=\left(\left.\frac{\partial G}{\partial a}\right|_{a=\overline{a}} \sigma_{a}\right)^{2}+\left(\left.\frac{\partial G}{\partial b}\right|_{b=\overline{b}} \sigma_{b}\right)^{2}+\left(\left.\frac{\partial G}{\partial c}\right|_{c=\overline{c}} \sigma_{c}\right)^{2}+\cdots \\
++2\left(\frac{\partial G}{\partial a}\right)_{a=\overline{a}}\left(\frac{\partial G}{\partial b}\right)_{b=\overline{b}} \sigma_{a b}+2\left(\frac{\partial G}{\partial a}\right)_{a=\overline{a}}\left(\frac{\partial G}{\partial c}\right)_{c=\overline{c}} \sigma_{a c} \\ +2\left(\frac{\partial G}{\partial b}\right)_{b=\overline{b}}\left(\frac{\partial G}{\partial c}\right)_{c=\overline{c}} \sigma_{b c}+\cdots$$
 
-\]
+\end{equation}
+
+
 
 Where and $E[x]$ is the expected value of $x$.
 Measurements.jl does not know about arrays, or JuliaDB, it just
