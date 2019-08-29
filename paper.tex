@@ -51,6 +51,83 @@ and efficient manually-memory-managed languages such as C or C++ helping
 the database implementer greatly.
 
 
+
+\section{Design of JuliaDB}
+
+In the following subsection we describe the design of JuliaDB which empowers performance and interoperability.
+
+\subsection{Columnar memory layout}
+The basic datastructure in JuliaDB is the table.
+
+\begin{lstlisting}[language=Julia]
+lotr = table((name=StringArray(["Frodo", "Samwise", "Bilbo",
+                                "Aragorn", "Boromir", "Gimli",
+                                "Elrond", "Legolas"]),
+             race=PooledArray(["Hobbit", "Hobbit", "Hobbit",
+                               "Human", "Human", "Dwarf",
+                               "Elf", "Elf"]),
+             age=[33, 61, 111, 87, 41, 139, 6000, 2931]));
+
+collect(lotr)
+
+#=
+8-element Array{NamedTuple{(:name, :race, :age),
+                Tuple{String,String,Int64}},1}:
+ (name = "Frodo", race = "Hobbit", age = 33)  
+ (name = "Samwise", race = "Hobbit", age = 61)
+ (name = "Bilbo", race = "Hobbit", age = 111) 
+ (name = "Aragorn", race = "Human", age = 87) 
+ (name = "Boromir", race = "Human", age = 41) 
+ (name = "Gimli", race = "Dwarf", age = 139)  
+ (name = "Elrond", race = "Elf", age = 6000)  
+ (name = "Legolas", race = "Elf", age = 2931) 
+=#
+\end{lstlisting}
+Listing 1. \emph{A table stores a named tuple of columns, but produces named tuple rows when iterated.}\\
+
+Listing 1 shows a table constructed from a named tuple of column vectors. Although a table stores data as a named tuple of columns, it acts as an iterator of rows. Rows are tuples or named tuples of items.
+
+The columns can be accessed using the \texttt{columns} function (e.g. \texttt{rows(lotr)} returns a named tuple of column vectors provided to \texttt{table} during construction) while the rows can be accessed as an array of tuples using the \texttt{rows} function rows is a struct of arrays view into the columnar storage, unlike \texttt{table} which returns a JuliaDB table, \texttt{rows} returns a legitimate Julia array.
+
+Tables support \texttt{map}, \texttt{reduce}, \texttt{groupreduce}, \texttt{groupby} and \texttt{join} operations.
+
+Listing 1 also illustrates use of \texttt{StringArray} and \texttt{PooledArray} array types as columns. These special array types enable efficient packing of String and categorical data respectively.
+
+
+\begin{figure*}[t]
+\centerline{\includegraphics[width=11cm]{stringarray.png}}
+\caption{StringArray layout.}
+  \label{fig:stringarray}
+\end{figure*}
+
+A \texttt{StringArray}'s memory layout is show in in Figure \ref{fig:stringarray}. The contents of strings (unicode character codes) are packed into a buffer of 8-bit unsigend integers. \texttt{StringArray} also stores the lengths of each string and the index (offset) at which each of them starts. Although it would suffice to store just the length of each string, storing offset also allows us to implement efficient mutation operations. Setting an element of the array appends the new string to the end of the buffer and replaces the length and offset with the corresponding new length and offsets for that item. Operations such as \texttt{sort!} and \texttt{permute!} (in place permutation of items) can simply modify the length and offset arrays and leave the buffer unmodified. Wherever suitable, in code internal to JuliaDB, we create \texttt{WeakRefString} instead of creating String objects when we index into a \texttt{StringArray}, this greatly reduces GC-load when dealing with string columns in operations such as groupby and join.
+
+A \texttt{PooledArray}'s memory layout is shown in Figure \ref{fig:pooledarray}. It is useful in compressing data with low number of unique items as compared to the total number of items. PooledArrays stores a dictionary mapping each unique item to a \texttt{ref} integer, and then an array of refs which tells which unique element appears in what position in the uncompressed array.
+
+\subsection{Sort-based indexing}
+
+We implement groupby and join by traversing tables in the key-order. We use counting sort wherever possible (e.g. integer columns, PooledArrays) to do a small amount of initial work on the order of $O(k \log k)$ where $k$ is the number of unique values and then acheive a sorted permutation in $O n$ time where $n$ is the number of rows. In most systems where the implementation is done in C++, the ordering routines are restricted to a handful of primitive data types. In our system any user defined data type with an \code{isless} method to compare two items can take part in the sorting.
+
+\textbf{Indexing: }For speeding up table operations, you can tell
+JuliaDB to keep the rows of a table sorted by some of its fields.
+These fields are called primary key fields. The primary key fields
+can be of any data type which has an \code{isless} method associated
+with it to compare two values. This includes but is not limited to
+numbers, strings, symbols, dates, time periods, currencies, quantities
+of comparable physical units (e.g. inch, mm).
+
+\subsection{Distributed compute}
+
+A distributed table is a distributed analogue of the one described
+above. It is stored as many tables across multiple Julia processes,
+\code{columns} returns a tuple of \emph{distributed arrays} and
+\code{rows} returns a distributed array of tuples! The distributed
+arrays implementation has the usual array operations (map, reduce,
+hcat, vcat) defined on it in a distributed manner. Constructing a
+table with one or more distributed columns using the table constructor
+results in a distributed table. We use the word ``table'' from now on to refer interchangeably to both types of tables, unless
+noted otherwise.
+
 \section{Case study: manipulating measurements}
 \label{sec:measurements}
 
@@ -164,83 +241,6 @@ Finally, the Measurements.jl defines how plotting must be performed for an array
 
 The Measurement type in the Measurements.jl ~\cite{giordano2016} package represents physical measurements with some uncertainty. JuliaDB is unaware of the Measurement datatype, yet it can store, read and write to disk, and perform any database operation while using the math defined on the measurement type. In a two-language system, a performant implementation of the measurement datastructure must be done in a low-level language like C. For reasonable performance on queries on columns containing measurements, one may have to implement an array of measurements datastructure in the low-level language as well that supports many array operations. But with JuliaDB and Julia, simply defining the measurement type and the primitive operations on Measurements is enough to achieve all the said features. Measurements can be stored efficiently in Julia arrays, operations such as `mean` and `sum` or broadcast on arrays of measurements fall out their existing generic implementations due to Julia's dynamic multiple-dispatch based JIT compiler.
 
-
-\section{Design of JuliaDB}
-
-In the following subsection we describe the design of JuliaDB which empowers performance and interoperability.
-
-\subsection{Columnar memory layout}
-The basic datastructure in JuliaDB is the table.
-
-\begin{lstlisting}[language=Julia]
-lotr = table((name=StringArray(["Frodo", "Samwise", "Bilbo",
-                                "Aragorn", "Boromir", "Gimli",
-                                "Elrond", "Legolas"]),
-             race=PooledArray(["Hobbit", "Hobbit", "Hobbit",
-                               "Human", "Human", "Dwarf",
-                               "Elf", "Elf"]),
-             age=[33, 61, 111, 87, 41, 139, 6000, 2931]));
-
-collect(lotr)
-
-#=
-8-element Array{NamedTuple{(:name, :race, :age),
-                Tuple{String,String,Int64}},1}:
- (name = "Frodo", race = "Hobbit", age = 33)  
- (name = "Samwise", race = "Hobbit", age = 61)
- (name = "Bilbo", race = "Hobbit", age = 111) 
- (name = "Aragorn", race = "Human", age = 87) 
- (name = "Boromir", race = "Human", age = 41) 
- (name = "Gimli", race = "Dwarf", age = 139)  
- (name = "Elrond", race = "Elf", age = 6000)  
- (name = "Legolas", race = "Elf", age = 2931) 
-=#
-\end{lstlisting}
-Listing 1. \emph{A table stores a named tuple of columns, but produces named tuple rows when iterated.}\\
-
-Listing 1 shows a table constructed from a named tuple of column vectors. Although a table stores data as a named tuple of columns, it acts as an iterator of rows. Rows are tuples or named tuples of items.
-
-The columns can be accessed using the \texttt{columns} function (e.g. \texttt{rows(lotr)} returns a named tuple of column vectors provided to \texttt{table} during construction) while the rows can be accessed as an array of tuples using the \texttt{rows} function rows is a struct of arrays view into the columnar storage, unlike \texttt{table} which returns a JuliaDB table, \texttt{rows} returns a legitimate Julia array.
-
-Tables support \texttt{map}, \texttt{reduce}, \texttt{groupreduce}, \texttt{groupby} and \texttt{join} operations.
-
-Listing 1 also illustrates use of \texttt{StringArray} and \texttt{PooledArray} array types as columns. These special array types enable efficient packing of String and categorical data respectively.
-
-
-\begin{figure*}[t]
-\centerline{\includegraphics[width=11cm]{stringarray.png}}
-\caption{StringArray layout.}
-  \label{fig:stringarray}
-\end{figure*}
-
-A \texttt{StringArray}'s memory layout is show in in Figure \ref{fig:stringarray}. The contents of strings (unicode character codes) are packed into a buffer of 8-bit unsigend integers. \texttt{StringArray} also stores the lengths of each string and the index (offset) at which each of them starts. Although it would suffice to store just the length of each string, storing offset also allows us to implement efficient mutation operations. Setting an element of the array appends the new string to the end of the buffer and replaces the length and offset with the corresponding new length and offsets for that item. Operations such as \texttt{sort!} and \texttt{permute!} (in place permutation of items) can simply modify the length and offset arrays and leave the buffer unmodified. Wherever suitable, in code internal to JuliaDB, we create \texttt{WeakRefString} instead of creating String objects when we index into a \texttt{StringArray}, this greatly reduces GC-load when dealing with string columns in operations such as groupby and join.
-
-A \texttt{PooledArray}'s memory layout is shown in Figure \ref{fig:pooledarray}. It is useful in compressing data with low number of unique items as compared to the total number of items. PooledArrays stores a dictionary mapping each unique item to a \texttt{ref} integer, and then an array of refs which tells which unique element appears in what position in the uncompressed array.
-
-\subsection{Sort-based indexing}
-
-We implement groupby and join by traversing tables in the key-order. We use counting sort wherever possible (e.g. integer columns, PooledArrays) to do a small amount of initial work on the order of $O(k \log k)$ where $k$ is the number of unique values and then acheive a sorted permutation in $O n$ time where $n$ is the number of rows. In most systems where the implementation is done in C++, the ordering routines are restricted to a handful of primitive data types. In our system any user defined data type with an \code{isless} method to compare two items can take part in the sorting.
-
-\textbf{Indexing: }For speeding up table operations, you can tell
-JuliaDB to keep the rows of a table sorted by some of its fields.
-These fields are called primary key fields. The primary key fields
-can be of any data type which has an \code{isless} method associated
-with it to compare two values. This includes but is not limited to
-numbers, strings, symbols, dates, time periods, currencies, quantities
-of comparable physical units (e.g. inch, mm).
-
-\subsection{Distributed compute}
-
-A distributed table is a distributed analogue of the one described
-above. It is stored as many tables across multiple Julia processes,
-\code{columns} returns a tuple of \emph{distributed arrays} and
-\code{rows} returns a distributed array of tuples! The distributed
-arrays implementation has the usual array operations (map, reduce,
-hcat, vcat) defined on it in a distributed manner. Constructing a
-table with one or more distributed columns using the table constructor
-results in a distributed table. We use the word ``table'' from now on to refer interchangeably to both types of tables, unless
-noted otherwise.
-
 \section{Benchmarks}
 
 Here we show benchmarks of JuliaDB against other popular data science
@@ -249,10 +249,10 @@ features for fair comparison.
 
 \subsection{CSV loading}
 
-\begin{figure}[h]
+\begin{figure*}[h]
 \centering \includegraphics[width=5in]{image8.png} \caption{Performance comparison for loading 815MB from the NYC taxi dataset}
 \label{fig:nyctaxiload} 
-\end{figure}
+\end{figure*}
 Our test for loading data is an 815 MB CSV file from the NYC Taxi
 \& Limousine Commission’s records on every yellow cab trip in January
 of 2017. Figure~\ref{fig:nyctaxiload} compares loading times of
@@ -278,10 +278,10 @@ needs to depend on a user-defined function.
 JuliaDB is the only platform that does not have a slowdown associated
 with a UDF, with pandas taking the biggest hit (Figure~\ref{fig:nyctaxiquery}).
 
-\begin{figure}[h]
+\begin{figure*}[h]
 \centering \includegraphics[width=5in]{image4.png} \caption{Query times for 3 different query types across various systems}
 \label{fig:nyctaxiquery} 
-\end{figure}
+\end{figure*}
 
 \section{Applications}
 
