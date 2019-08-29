@@ -85,9 +85,13 @@ Listing 1. \emph{A table stores a named tuple of columns, but produces named tup
 
 Listing 1 shows a table constructed from a named tuple of column vectors. Although a table stores data as a named tuple of columns, it acts as an iterator of rows. Rows are tuples or named tuples of items.
 
+Storing data row-by-row is not ideal when a query needs to operate on a small subset of fields for in such cases, one would have to load the whole dataset into memory and wade through it to find the relavent fields. But if we stored the columns separately, a single field's data is all available together and hence queries requiring data from a subset of fields load only data for those fields. The only advantage of row-by-row storage would be to read multiple fields per row on a sequential access optimized device such as tape drive or a spinning-disk hard drive. It's not worth worrying about these cases anymore.
+
+The reason a table behaves as an iterator is a matter of convension. It's more helpful to think of writing code one row at a time. JuliaDB creates an immutable struct every time a row needs to be materialized. This may or may not lead to heap-allocation depending on the compiler optimizations that occur. In most cases the compiler is smart enough to eleminate allocation.
+
 The columns can be accessed using the \texttt{columns} function (e.g. \texttt{rows(lotr)} returns a named tuple of column vectors provided to \texttt{table} during construction) while the rows can be accessed as an array of tuples using the \texttt{rows} function rows is a struct of arrays view into the columnar storage, unlike \texttt{table} which returns a JuliaDB table, \texttt{rows} returns a legitimate Julia array.
 
-Tables support \texttt{map}, \texttt{reduce}, \texttt{groupreduce}, \texttt{groupby} and \texttt{join} operations.
+Tables naturally support \texttt{map}, \texttt{reduce}, \texttt{groupreduce}, \texttt{groupby} and \texttt{join} operations. We will defer their discussion to the API documentation of JuliaDB. Read the Sectoin \ref{sec:sort} for more about the implementation of some of these operations.
 
 Listing 1 also illustrates use of \texttt{StringArray} and \texttt{PooledArray} array types as columns. These special array types enable efficient packing of String and categorical data respectively.
 
@@ -103,6 +107,7 @@ A \texttt{StringArray}'s memory layout is show in in Figure \ref{fig:stringarray
 A \texttt{PooledArray}'s memory layout is shown in Figure \ref{fig:pooledarray}. It is useful in compressing data with low number of unique items as compared to the total number of items. PooledArrays stores a dictionary mapping each unique item to a \texttt{ref} integer, and then an array of refs which tells which unique element appears in what position in the uncompressed array.
 
 \subsection{Sort-based indexing}
+\label{sec:sort}
 
 We implement groupby and join by traversing tables in the key-order. We use counting sort wherever possible (e.g. integer columns, PooledArrays) to do a small amount of initial work on the order of $O(k \log k)$ where $k$ is the number of unique values and then achieve a sorted permutation in $O n$ time where $n$ is the number of rows. In most systems where the implementation is done in C++, the ordering routines are restricted to a handful of primitive data types. In our system any user defined data type with an \texttt{isless} method to compare two items can take part in the sorting.
 
