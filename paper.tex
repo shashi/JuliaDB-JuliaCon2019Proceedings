@@ -15,14 +15,13 @@
 \maketitle
 
 \begin{abstract}
+We describe how the two-language problem manifests in the world of analytical databases. A system with this problem takes at least two languages to implement: a low-level statically compiled language such as C or C++ to implement the performance-sensitive operations, and a high-level dynamic scripting language such as Python or R to implement the user-facing API. This dichotomy usually exists because the latter language cannot compile to efficient machine code like the former, and the former does not have the ease-of-use as the latter. We present JuliaDB, a distributed database for analytical workloads that is built solely in Julia, and does not have this and other resulting problems. JuliaDB is designed to allow seamless use of user-defined Julia functions and data types. Julia's just-in-time compilation welds code from across Julia's package ecosystem as well as user code to generate efficient machine code allowing for high-performance data science in a coherent environment. We show a case study involving the use of a custom numeric type. Our benchmark shows that the system can perform on-par with or betters that of pandas and tidyverse in the cases we tested.
 
-We present JuliaDB, a distributed database for analytical workloads that is built solely in Julia, a high-level high-performance dynamic language for numerical computing. JuliaDB is designed to allow seamless use of user-defined Julia functions and data types. Julia's just-in-time compilation welds code from across Julia's package ecosystem as well as user code to generate efficient machine code allowing for high-performance data science in a coherent environment. We show example applications involving error analysis, and online statistics. Our benchmark shows that the system can perform on-par with or betters that of pandas and tidyverse in R.
 \headingtable
 
 \end{abstract}
 
 \section{Introduction}
-
 
 In~\cite{bezanson2017julia}, we describe the motivation behind Julia and how it was designed to address the two language problem: 
 \begin{quote}
