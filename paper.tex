@@ -127,13 +127,17 @@ time                 mean
 Use OnlineStats for stats on measurements for lesser allocation and parallelism.
 
 \begin{lstlisting}
-# assuming session was started with many julia workers
+# assuming Julia session was started with many julia workers
 
 using OnlineStats
 
-d_observations = distribute(observations, 8) # distribute into 8 parts, equally split between available julia processes
-d_minutely = groupreduce(Mean(Measurement{Float64}), d_observations,
-                         :time => t->trunc(t, Minute), select=:x)
+# distribute into 8 parts, equally split
+# between available julia processes
+d_observations = distribute(observations, 8)
+d_minutely = groupreduce(Mean(Measurement{Float64}),
+                         d_observations,
+                         :time => t->trunc(t, Minute),
+                         select=:x)
 
 
 #=
