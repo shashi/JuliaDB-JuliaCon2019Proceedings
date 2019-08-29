@@ -49,20 +49,15 @@ the database implementer greatly.
 \section{Case study: manipulating measurements}
 \label{sec:measurements}
 
-Using the Measurements.jl ~\cite{giordano2016} package to represent physical measurements with some uncertainty. JuliaDB is unaware of the Measurement datatype, yet it can store measurements, read and write to disk, and perform any database operation while using the math defined on the measurement type. In a two-language system, a performant implementation of the measurement datastructure must be done in a low-level language like C. For performant queries on columns containing measurements, one will have to implement an array of measurements datastructure in the low-level language as well that supports many array operations. But with JuliaDB and Julia, simply defining the measurement types and the primitive operations on Measurements is enough to achieve all the said features. Measurements can be stored efficiently in Julia arrays, operations such as `mean` and `sum` or broadcast on arrays of measurements fall out their existing generic implementations due to Julia's dynamic multiple-dispatch based JIT compiler.
+We take up a prototypical illustration of the power of JuliaDB by using a custom number type, namely the Measurement type, in a database.
 
-Measurements.jl implements the ± operator
-which represents an observation with some uncertainty associated
-with it. Numeric operations on measuements propagate the
-uncertainty as prescribed by linear error propagation theory:
-For a function application $G(a,b,c...)$ where arguments are measurements $a=\overline{a} \pm \sigma_{a}, b=\overline{b} \pm \sigma_{b}, c=\overline{c} \pm \sigma_{c}$ the error of the output is found using the relationship:
+Measurements.jl implements the ± operator which represents an observation with some uncertainty associated with it. Numeric operations on measuements propagate the uncertainty as prescribed by linear error propagation theory: For a function application $G(a,b,c...)$ where arguments are measurements $a=\overline{a} \pm \sigma_{a}, b=\overline{b} \pm \sigma_{b}, c=\overline{c} \pm \sigma_{c}$ the error of the output is found using the relationship: 
 
 \begin{equation}
 $$\sigma_{G}^{2}=\left(\left.\frac{\partial G}{\partial a}\right|_{a=\overline{a}} \sigma_{a}\right)^{2}+\left(\left.\frac{\partial G}{\partial b}\right|_{b=\overline{b}} \sigma_{b}\right)^{2}+\left(\left.\frac{\partial G}{\partial c}\right|_{c=\overline{c}} \sigma_{c}\right)^{2}+\cdots \\
 +2\left(\frac{\partial G}{\partial a}\right)_{a=\overline{a}}\left(\frac{\partial G}{\partial b}\right)_{b=\overline{b}} \sigma_{a b}+2\left(\frac{\partial G}{\partial a}\right)_{a=\overline{a}}\left(\frac{\partial G}{\partial c}\right)_{c=\overline{c}} \sigma_{a c} \\ +2\left(\frac{\partial G}{\partial b}\right)_{b=\overline{b}}\left(\frac{\partial G}{\partial c}\right)_{c=\overline{c}} \sigma_{b c}+\cdots$$
 
 \end{equation}
-
 
 
 Where and $E[x]$ is the expected value of $x$.
@@ -83,6 +78,9 @@ mean function for an array of measurements in C.
 
 Use OnlineStats for stats on measurements for lesser
 allocation and parallelism.
+
+The Measurement type in the Measurements.jl ~\cite{giordano2016} package represents physical measurements with some uncertainty. JuliaDB is unaware of the Measurement datatype, yet it can store, read and write to disk, and perform any database operation while using the math defined on the measurement type. In a two-language system, a performant implementation of the measurement datastructure must be done in a low-level language like C. For reasonable performance on queries on columns containing measurements, one may have to implement an array of measurements datastructure in the low-level language as well that supports many array operations. But with JuliaDB and Julia, simply defining the measurement type and the primitive operations on Measurements is enough to achieve all the said features. Measurements can be stored efficiently in Julia arrays, operations such as `mean` and `sum` or broadcast on arrays of measurements fall out their existing generic implementations due to Julia's dynamic multiple-dispatch based JIT compiler.
+
 
 \section{Design of JuliaDB}
 
