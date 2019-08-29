@@ -118,8 +118,8 @@ of comparable physical units (e.g. inch, mm).
 
 A distributed table is a distributed analogue of the one described
 above. It is stored as many tables across multiple Julia processes,
-\code{columns} returns a tuple of \emph{distributed arrays} and
-\code{rows} returns a distributed array of tuples! The distributed
+\texttt{columns} returns a tuple of \emph{distributed arrays} and
+\texttt{rows} returns a distributed array of tuples! The distributed
 arrays implementation has the usual array operations (map, reduce,
 hcat, vcat) defined on it in a distributed manner. Constructing a
 table with one or more distributed columns using the table constructor
