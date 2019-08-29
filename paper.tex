@@ -1,4 +1,3 @@
-\usepackage{url}
 % JuliaCon proceedings template
 \documentclass{juliacon}
 \setcounter{page}{1}
@@ -105,12 +104,12 @@ A \texttt{PooledArray}'s memory layout is shown in Figure \ref{fig:pooledarray}.
 
 \subsection{Sort-based indexing}
 
-We implement groupby and join by traversing tables in the key-order. We use counting sort wherever possible (e.g. integer columns, PooledArrays) to do a small amount of initial work on the order of $O(k \log k)$ where $k$ is the number of unique values and then acheive a sorted permutation in $O n$ time where $n$ is the number of rows. In most systems where the implementation is done in C++, the ordering routines are restricted to a handful of primitive data types. In our system any user defined data type with an \code{isless} method to compare two items can take part in the sorting.
+We implement groupby and join by traversing tables in the key-order. We use counting sort wherever possible (e.g. integer columns, PooledArrays) to do a small amount of initial work on the order of $O(k \log k)$ where $k$ is the number of unique values and then achieve a sorted permutation in $O n$ time where $n$ is the number of rows. In most systems where the implementation is done in C++, the ordering routines are restricted to a handful of primitive data types. In our system any user defined data type with an \texttt{isless} method to compare two items can take part in the sorting.
 
 \textbf{Indexing: }For speeding up table operations, you can tell
 JuliaDB to keep the rows of a table sorted by some of its fields.
 These fields are called primary key fields. The primary key fields
-can be of any data type which has an \code{isless} method associated
+can be of any data type which has an \texttt{isless} method associated
 with it to compare two values. This includes but is not limited to
 numbers, strings, symbols, dates, time periods, currencies, quantities
 of comparable physical units (e.g. inch, mm).
