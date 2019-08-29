@@ -15,7 +15,7 @@
 \maketitle
 
 \begin{abstract}
-We describe how the two-language problem manifests in the world of analytical databases. A system with this problem takes at least two languages to implement: a low-level statically compiled language such as C or C++ to implement the performance-sensitive operations, and a high-level dynamic scripting language such as Python or R to implement the user-facing API. This dichotomy usually exists because the latter language cannot compile to efficient machine code like the former, and the former does not have the ease-of-use as the latter. We present JuliaDB, a distributed database for analytical workloads that is built solely in Julia, and does not have this and other resulting problems. JuliaDB is designed to allow seamless use of user-defined Julia functions and data types. Julia's just-in-time compilation welds code from across Julia's package ecosystem as well as user code to generate efficient machine code allowing for high-performance data science in a coherent environment. We show a case study involving the use of a custom numeric type. Our benchmark shows that the system can perform on-par with or betters that of pandas and tidyverse in the cases we tested.
+We describe how the two-language problem manifests in the world of analytical databases. A system with this problem takes at least two languages to implement: a low-level statically compiled language such as C or C++ to implement the performance-sensitive operations, and a high-level dynamic scripting language such as Python or R to implement the user-facing API. This dichotomy usually exists because the latter language cannot compile to efficient machine code like the former, and the former does not have the ease-of-use as the latter. We present JuliaDB, a distributed database for analytical workloads that is built solely in Julia and does not have this and other resulting problems. JuliaDB is designed to allow seamless use of user-defined Julia functions and data types. Julia's just-in-time compilation welds code from across Julia's package ecosystem as well as user code to generate efficient machine code allowing for high-performance data science in a coherent environment. We show a case study involving the use of a custom numeric type. Our benchmark shows that the system can perform on-par with or betters that of pandas and tidyverse in the cases we tested.
 
 \headingtable
 
@@ -278,13 +278,14 @@ JuliaDB is the only platform that does not have a slowdown associated
 with a UDF, with pandas taking the biggest hit (Figure~\ref{fig:nyctaxiquery}).
 
 \begin{figure*}[h]
-\centering \includegraphics[width=5in]{image4.png} \caption{Query times for 3 different query types across various systems}
-\label{fig:nyctaxiquery} 
+    \centering \includegraphics[width=5in]{image4.png} \caption{Query times for 3 different query types across various systems}
+    \label{fig:nyctaxiquery} 
+    \caption{Query performance comparison with other systems. Query 1: average fare amount by type of vendor. Query 2: number of trips grouped by number of passengers and day of week. Query 3: number of trips grouped by number of passengers and even and odd days of week. (Monday, Wednesday, Firday are even, rest are odd).
 \end{figure*}
 
-\section{Applications}
+\section{Usage in real world}
 
-We breifly mention some applications of JuliaDB in the real-world. Julia Computing is using JuliaDB as a time-series database~\cite{wilmott2018} for large datasets.
+Josh Day describes how JuliaDB is a natural time-series database~\cite{wilmott2018} for large datasets without having been designed with the specific purpose of time-series in mind. JuliaDB is used by the package Diversity.jl~\cite{claireh2018} to generate results in understanding the evolutionary relationships between species across the whole kingdom of flowering plants, and simulations to predict responses of plants species to climate change.
 
 \section{Future directions}
 
