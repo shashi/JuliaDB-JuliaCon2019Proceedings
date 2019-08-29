@@ -91,9 +91,13 @@ We can store measurements directly in a JuliaDB table.
 using JuliaDB, Measurements, Dates, Random
 Random.seed!(1234)
 
-n = 100000
-timestamps = sort(DateTime.(now() .- Millisecond.(rand(1:10^6, n))))
-x = cumsum(randn(n)) .± rand(n)./10
+function random_observations(n)
+    timestamps = sort(DateTime.(now() .- Millisecond.(rand(1:10^6, n))))
+    x = cumsum(randn(n)) .± rand(n)./10
+    table((time=timestamps, x=x))
+end
+
+observations = random_observations(100000)
 
 #=
 Table with 100000 rows, 2 columns:
@@ -150,6 +154,8 @@ time                 mean
 ...
 =#
 \end{lstlisting}
+
+Finally, the Measurements.jl defines how plotting must be performed for an array of measurements, hence, for example a plotting tool that knows the tabular structure of JuliaDB, such as StatPlots.jl can be readily used to plot the table. The plotting automatically shows error bars representing uncertainty.
 
 The Measurement type in the Measurements.jl ~\cite{giordano2016} package represents physical measurements with some uncertainty. JuliaDB is unaware of the Measurement datatype, yet it can store, read and write to disk, and perform any database operation while using the math defined on the measurement type. In a two-language system, a performant implementation of the measurement datastructure must be done in a low-level language like C. For reasonable performance on queries on columns containing measurements, one may have to implement an array of measurements datastructure in the low-level language as well that supports many array operations. But with JuliaDB and Julia, simply defining the measurement type and the primitive operations on Measurements is enough to achieve all the said features. Measurements can be stored efficiently in Julia arrays, operations such as `mean` and `sum` or broadcast on arrays of measurements fall out their existing generic implementations due to Julia's dynamic multiple-dispatch based JIT compiler.
 
@@ -229,6 +235,8 @@ hcat, vcat) defined on it in a distributed manner. Constructing a
 table with one or more distributed columns using the table constructor
 results in a distributed table. We use the word ``table'' from now on to refer interchangeably to both types of tables, unless
 noted otherwise.
+
+\section{Benchmarks}
 
 Here we show benchmarks of JuliaDB against other popular data science
 databases. Where appropriate, we turned off JuliaDB's distributed
