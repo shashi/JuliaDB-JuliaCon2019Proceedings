@@ -139,7 +139,7 @@ We take up a prototypical illustration of the power of JuliaDB by using a custom
 Measurements.jl implements the ± operator which represents an observation with some uncertainty associated with it. Numeric operations on measuements propagate the uncertainty as prescribed by linear error propagation theory: For a function application $G(a,b,c...)$ where arguments are measurements $a=\overline{a} \pm \sigma_{a}, b=\overline{b} \pm \sigma_{b}, c=\overline{c} \pm \sigma_{c}$ the error of the output is found using the relationship: 
 
 $$\begin{equation}
-  \begin{split}
+  \begin{align}
     \sigma_G^2 &= \left( \left.\frac{\partial G}{\partial a}\right\vert_{a =
         \bar{a}} \sigma_a \right)^2 + \left( \left.\frac{\partial G}{\partial
           b}\right\vert_{b = \bar{b}} \sigma_b \right)^2 + \left(
@@ -153,9 +153,8 @@ $$\begin{equation}
     &\quad{}+ 2 \left(\frac{\partial G}{\partial b}\right)_{b = \bar{b}}
     \left(\frac{\partial G}{\partial c}\right)_{c = \bar{c}} \sigma_{bc} +
     \cdots
-  \end{split}
-\end{equation}
-$$
+  \end{align}
+\end{equation}$$
 
 
 Where and $E[x]$ is the expected value of $x$.
@@ -282,9 +281,9 @@ JuliaDB is the only platform that does not have a slowdown associated
 with a UDF, with pandas taking the biggest hit (Figure~\ref{fig:nyctaxiquery}).
 
 \begin{figure*}[h]
-    \centering \includegraphics[width=5in]{image4.png} \caption{Query times for 3 different query types across various systems}
+    \centering \includegraphics[width=5in]{image4.png}
     \label{fig:nyctaxiquery} 
-    \caption{Query performance comparison with other systems. Query 1: average fare amount by type of vendor. Query 2: number of trips grouped by number of passengers and day of week. Query 3: number of trips grouped by number of passengers and even and odd days of week. (Monday, Wednesday, Firday are even, rest are odd).
+    \caption{Query performance comparison with other systems. Query 1: average fare amount by type of vendor. Query 2: number of trips grouped by number of passengers and day of week. Query 3: number of trips grouped by number of passengers and even and odd days of week. (Monday, Wednesday, Firday are even, rest are odd).}
 \end{figure*}
 
 \section{Usage in real world}
